@@ -190,7 +190,7 @@ function start_contrail() {
     run_process schema "contrail-schema --conf_file /etc/contrail/contrail-schema.conf"
     run_process control "sudo contrail-control --conf_file /etc/contrail/contrail-control.conf"
     run_process collector "contrail-collector --conf_file /etc/contrail/contrail-collector.conf"
-    is_service_enabled kafka && run_process kafka "/usr/share/kafka/bin/kafka-server-start.sh /usr/share/kafka/config/server.properties"
+    service_enabled analytic-api && run_process kafka "/usr/share/kafka/bin/kafka-server-start.sh /usr/share/kafka/config/server.properties"
     run_process analytic-api "contrail-analytics-api --conf_file /etc/contrail/contrail-analytics-api.conf"
     run_process alarm-gen "contrail-alarm-gen --conf_file /etc/contrail/contrail-alarm-gen.conf"
     run_process query-engine "contrail-query-engine --conf_file /etc/contrail/contrail-query-engine.conf"
@@ -298,6 +298,7 @@ elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
     fetch_contrail
 
     if is_service_enabled api-srv disco svc-mon schema control collector analytic-api query-engine dns named; then
+        install_kafka
         install_cassandra
         install_cassandra_cpp_driver
 
