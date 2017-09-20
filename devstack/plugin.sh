@@ -1,4 +1,6 @@
 #!/bin/bash
+_XTRACE_CONTRAIL=$(set +o | grep xtrace)
+set +o xtrace
 
 function fetch_contrail() {
     if ! which repo > /dev/null 2>&1 ; then
@@ -440,3 +442,4 @@ elif [[ "$1" == "clean" ]]; then
     #no-op
     :
 fi
+$_XTRACE_CONTRAIL
