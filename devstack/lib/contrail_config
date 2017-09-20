@@ -30,6 +30,9 @@ DNS_IP_PORT_LIST=$(echo $DNS_IP_LIST | \
 ANALYTICS_IP_PORT_LIST=$(echo $ANALYTICS_IP_LIST | \
     awk -F "," '{for (i=1;i<=NF;i++) $i=$i":8081"; print}')
 
+KAFKA_IP_PORT_LIST=$(echo $ANALYTICS_IP_LIST | \
+    awk -F " " '{for (i=1;i<=NF;i++) $i=$i":9092"; print}')
+
 
 # Conditionnaly set ifmap port
 IFMAP_PORT=8443
@@ -286,6 +289,7 @@ function contrail_config_collector()
 
     iniset -sudo $config_file DEFAULT hostip $COLLECTOR_IP
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
+    iniset -sudo $config_file DEFAULT kafka_broker_list $KAFKA_IP_PORT_LIST
 
     if _vercmp $CONTRAIL_BRANCH "<" R3.0; then
         iniset -sudo $config_file DEFAULT cassandra_server_list "$CASSANDRA_IP_PORT_LIST"
@@ -314,6 +318,7 @@ function contrail_config_analytics_api()
 
     iniset -sudo $config_file DEFAULT host_ip $COLLECTOR_IP
     iniset -sudo $config_file DEFAULT hostname $CONTRAIL_HOSTNAME
+    iniset -sudo $config_file DEFAULT collectors $COLLECTOR_IP_PORT_LIST
 
     #REVISIT: analytics api currently fails with default value (15)
     iniset -sudo $config_file DEFAULT partitions 0
