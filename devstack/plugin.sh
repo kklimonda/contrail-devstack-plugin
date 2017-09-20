@@ -63,9 +63,15 @@ function install_cassandra_cpp_driver() {
     TMP_PKG_DIR=$(mktemp -d)
     cd $TMP_PKG_DIR
 
+    # cassandra-cpp-driver depends on libuv, but on xenial the package is called libuv1.
+    # We use equivs to stub libuv package, and install libuv1 from repository
+    apt-get install equivs
+    equivs-control libuv
+    sed -i -- 's/Package:.*/Package: libuv/g' libuv
+    equivs-build libuv
+
     wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/cassandra/v2.5.0/cassandra-cpp-driver_2.5.0-1_amd64.deb
     wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/cassandra/v2.5.0/cassandra-cpp-driver-dev_2.5.0-1_amd64.deb
-    wget http://downloads.datastax.com/cpp-driver/ubuntu/$os_RELEASE/dependencies/libuv/v1.8.0/libuv_1.8.0-1_amd64.deb
 
     sudo dpkg -i *.deb
 
