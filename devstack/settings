@@ -15,7 +15,7 @@ fi
 is_service_enabled vrouter && enable_service vrouter-nodemgr
 is_service_enabled api-srv && enable_service config-nodemgr
 is_service_enabled control && enable_service control-nodemgr
-is_service_enabled analytics && enable_service analytics-nodemgr
+is_service_enabled analytic-api && enable_service analytics-nodemgr
 
 # General settings
 #----------------
