@@ -277,7 +277,8 @@ function build_contrail()
 
 function install_contrail()
 {
-
+    echo "FIXME: Implement that!"
+    exit 1
 }
 
 if [[ "$1" == "stack" && "$2" == "source" ]]; then
