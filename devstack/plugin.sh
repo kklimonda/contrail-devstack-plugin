@@ -35,6 +35,12 @@ function fetch_contrail() {
     fi
 }
 
+function install_kafka() {
+    if [ ! -e /usr/share/kafka/bin/kafka-server-start.sh ]; then
+        install_package kafka
+    fi
+}
+
 function install_cassandra() {
     [[ "$USE_EXTERNAL_CASSANDRA" == "False" ]] && return
 
@@ -86,6 +92,7 @@ function fetch_webui(){
         cd $CONTRAIL_DEST/contrail-web-core
         sed -ie "s|webController\.path.*|webController\.path = \'$CONTRAIL_DEST/contrail-web-controller\';|" config/config.global.js
         make fetch-pkgs-prod
+        npm install async-foreach gaze sass-graph meow redis winston lodash.clonedeep chalk bindings long
         make dev-env REPO=webController
         touch $CONTRAIL_DEST/contrail-webui-third-party/FETCH_DONE
         cd $TOP_DIR
@@ -183,7 +190,9 @@ function start_contrail() {
     run_process schema "contrail-schema --conf_file /etc/contrail/contrail-schema.conf"
     run_process control "sudo contrail-control --conf_file /etc/contrail/contrail-control.conf"
     run_process collector "contrail-collector --conf_file /etc/contrail/contrail-collector.conf"
+    is_service_enabled kafka && run_process kafka "/usr/share/kafka/bin/kafka-server-start.sh /usr/share/kafka/config/server.properties"
     run_process analytic-api "contrail-analytics-api --conf_file /etc/contrail/contrail-analytics-api.conf"
+    run_process alarm-gen "contrail-alarm-gen --conf_file /etc/contrail/contrail-alarm-gen.conf"
     run_process query-engine "contrail-query-engine --conf_file /etc/contrail/contrail-query-engine.conf"
     run_process dns "contrail-dns --conf_file /etc/contrail/dns/contrail-dns.conf"
     #NOTE: contrail-dns checks for '/usr/bin/contrail-named' in /proc/[pid]/cmdline to retrieve bind status
