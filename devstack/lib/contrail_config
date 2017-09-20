@@ -114,6 +114,19 @@ function contrail_config_redis()
     restart_service redis-server
 }
 
+function contrail_config_nodemgr()
+{
+    local config_file="/etc/contrail/contrail-config-nodemgr.conf"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULTS log_local 1
+    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/contrail-config-nodemgr.log'
+    iniset -sudo $config_file DEFAULTS corefile_path '/var/crash'
+
+    iniset -sudo $config_file COLLECTOR server_list $(echo $COLLECTOR_IP_PORT_LIST | tr ',' ' ')
+}
+
 function contrail_config_api()
 {
     local config_file="/etc/contrail/contrail-api.conf"
@@ -253,6 +266,19 @@ function contrail_config_api_lib()
     iniset -sudo $config_file auth AUTHN_SERVER $KEYSTONE_AUTH_HOST
 }
 
+function contrail_control_nodemgr()
+{
+    local config_file="/etc/contrail/contrail-control-nodemgr.conf"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULTS log_local 1
+    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/contrail-control-nodemgr.log'
+    iniset -sudo $config_file DEFAULTS corefile_path '/var/crash'
+
+    iniset -sudo $config_file COLLECTOR server_list $(echo $COLLECTOR_IP_PORT_LIST | tr ',' ' ')
+}
+
 function contrail_config_control()
 {
     local config_file="/etc/contrail/contrail-control.conf"
@@ -307,6 +333,19 @@ function contrail_config_collector()
 
     iniset -sudo $config_file DEFAULT log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULT log_local 1
+}
+
+function contrail_analytics_nodemgr()
+{
+    local config_file="/etc/contrail/contrail-analytics-nodemgr.conf"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULTS log_local 1
+    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/contrail-analytics-nodemgr.log'
+    iniset -sudo $config_file DEFAULTS corefile_path '/var/crash'
+
+    iniset -sudo $config_file COLLECTOR server_list $(echo $COLLECTOR_IP_PORT_LIST | tr ',' ' ')
 }
 
 function contrail_config_analytics_api()
@@ -405,6 +444,19 @@ function contrail_config_dns()
     sudo sed -i "s|secret.*|secret \"$rndc_secret\";|" /etc/contrail/dns/contrail-named.conf
 
     sudo mkdir -p ${CONTRAIL_DEST}/build/var/run/named/
+}
+
+function contrail_vrouter_nodemgr()
+{
+    local config_file="/etc/contrail/contrail-vrouter-nodemgr.conf"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULTS log_local 1
+    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/contrail-vrouter-nodemgr.log'
+    iniset -sudo $config_file DEFAULTS corefile_path '/var/crash'
+
+    iniset -sudo $config_file COLLECTOR server_list $(echo $COLLECTOR_IP_PORT_LIST | tr ',' ' ')
 }
 
 function contrail_config_vrouter_agent()
