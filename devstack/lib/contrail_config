@@ -114,14 +114,69 @@ function contrail_config_redis()
     restart_service redis-server
 }
 
-function contrail_config_nodemgr()
+function contrail_config_config_nodemgr()
 {
     local config_file="/etc/contrail/contrail-config-nodemgr.conf"
     sudo truncate -s 0 $config_file
 
+    if ! is_service_enabled config-nodemgr; then
+        return
+    fi
+
     iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
     iniset -sudo $config_file DEFAULTS log_local 1
     iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/contrail-config-nodemgr.log'
+    iniset -sudo $config_file DEFAULTS corefile_path '/var/crash'
+
+    iniset -sudo $config_file COLLECTOR server_list $(echo $COLLECTOR_IP_PORT_LIST | tr ',' ' ')
+}
+
+function contrail_config_analytics_nodemgr()
+{
+    local config_file="/etc/contrail/contrail-analytics-nodemgr.conf"
+    sudo truncate -s 0 $config_file
+
+    if ! is_service_enabled analytics-nodemgr; then
+        return
+    fi
+
+    iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULTS log_local 1
+    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/contrail-analytics-nodemgr.log'
+    iniset -sudo $config_file DEFAULTS corefile_path '/var/crash'
+
+    iniset -sudo $config_file COLLECTOR server_list $(echo $COLLECTOR_IP_PORT_LIST | tr ',' ' ')
+}
+
+function contrail_config_vrouter_nodemgr()
+{
+    local config_file="/etc/contrail/contrail-vrouter-nodemgr.conf"
+    sudo truncate -s 0 $config_file
+
+    if ! is_service_enabled vrouter-nodemgr; then
+        return
+    fi
+
+    iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULTS log_local 1
+    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/contrail-vrouter-nodemgr.log'
+    iniset -sudo $config_file DEFAULTS corefile_path '/var/crash'
+
+    iniset -sudo $config_file COLLECTOR server_list $(echo $COLLECTOR_IP_PORT_LIST | tr ',' ' ')
+}
+
+function contrail_config_control_nodemgr()
+{
+    local config_file="/etc/contrail/contrail-control-nodemgr.conf"
+    sudo truncate -s 0 $config_file
+
+    if ! is_service_enabled control-nodemgr; then
+        return
+    fi
+
+    iniset -sudo $config_file DEFAULTS log_level 'SYS_DEBUG'
+    iniset -sudo $config_file DEFAULTS log_local 1
+    iniset -sudo $config_file DEFAULTS log_file '/var/log/contrail/contrail-control-nodemgr.log'
     iniset -sudo $config_file DEFAULTS corefile_path '/var/crash'
 
     iniset -sudo $config_file COLLECTOR server_list $(echo $COLLECTOR_IP_PORT_LIST | tr ',' ' ')
