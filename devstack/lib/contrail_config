@@ -573,13 +573,55 @@ function contrail_config_qemu()
     fi
 }
 
+function _isnum()
+{
+    local var=$1
+    re='^-?[0-9]+([.][0-9]+)?$'
+    [[ "$var" =~ $re ]]
+}
+
+function _isbool()
+{
+    local var=$1
+    [[ "$var" == "false" || "$var" == "true" ]]
+}
+
+function jsset()
+{
+    local xtrace
+    xtrace=$(set +o | grep xtrace)
+    set +o xtrace
+
+    local sudo=""
+    if [ $1 == "-sudo" ]; then
+        sudo="sudo "
+        shift
+    fi
+    local file=$1
+    local option=$(echo $2 | sed -e's/\./\\\./g')
+    local value=$3
+
+    if ! _isnum "$value" && ! _isbool "$value"; then
+        value="'$value'"
+    fi
+
+    $sudo sed -ei "s|^$option[ =].*|$option = $value;|" $file
+
+    $xtrace
+}
+
 function contrail_config_webui()
 {
     local config_file="$CONTRAIL_DEST/contrail-web-core/config/config.global.js"
 
-    if is_service_enabled ui-webs ui-jobs; then
-        sed -ie "s|discoveryService\.enable.*|discoveryService\.enable = false;|" $config_file
-        sed -ie "s|regions\.RegionOne.*|regions\.RegionOne = \'http://$KEYSTONE_AUTH_HOST:5000/v2.0\';|" $config_file
-        sed -ie "s|identityManager\.ip.*|identityManager\.ip = \'$KEYSTONE_AUTH_HOST\';|" $config_file
+    if ! is_service_enabled ui-webs ui-jobs; then
+        return
     fi
+
+    jsset -sudo $config_file "config.discoveryService.enable" false
+    jsset -sudo $config_file "config.regions.RegionOne" "http://$KEYSTONE_AUTH_HOST:5000/v2.0"
+    jsset -sudo $config_file "config.identityManager.ip" "$KEYSTONE_AUTH_HOST"
+
+    local auth_file="$CONTRAIL_DEST/contrail-web-core/config/userAuth.js"
+    jsset -sudo $auth_file "auth.admin_password" "$CONTRAIL_ADMIN_PASSWORD"
 }
