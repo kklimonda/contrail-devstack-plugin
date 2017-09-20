@@ -660,7 +660,7 @@ function jsset()
         value="'$value'"
     fi
 
-    $sudo sed -ei "s|^$option[ =].*|$option = $value;|" $file
+    $sudo sed -ie "s|^$option[ =].*|$option = $value;|" $file
 
     $xtrace
 }
