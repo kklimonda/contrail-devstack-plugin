@@ -32,6 +32,12 @@ CONTRAIL_ADMIN_PROJECT=${CONTRAIL_ADMIN_PROJECT:-"admin"}
 # Contrail neutron plugin configuration functions
 source $CONTRAIL_PLUGIN_DIR/lib/neutron_plugins/opencontrail
 
+
+# Binary / package options
+
+CONTRAIL_DIST=${CONTRAIL_BUILD_SOURCE:-source}
+CONTRAIL_PACKAGE_REPO=${CONTRAIL_PACKAGE_REPO:-}
+
 # Source / build options
 #-----------------------
 

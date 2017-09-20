@@ -208,6 +208,78 @@ function start_contrail() {
     SCREEN_NAME="$STACK_SCREEN_NAME"
 }
 
+function build_contrail()
+{
+    fetch_contrail
+
+    if is_service_enabled api-srv disco svc-mon schema control collector analytic-api query-engine dns named; then
+        install_kafka
+        install_cassandra
+        install_cassandra_cpp_driver
+
+        # Packages should have been installed by devstack
+        #install_package $(_parse_package_files $CONTRAIL_DEST)
+
+        # From R4.0, IFMAP server (i.e. irond) dependency was removed
+        if _vercmp $CONTRAIL_BRANCH ">=" R4.0; then
+            if is_package_installed ifmap-server; then
+                uninstall_package ifmap-server || true #ifmap-server uninstall does not exit properly
+            fi
+            # Some needed directories were installed by the ifmap-server package
+            sudo mkdir -p /var/lib/contrail
+            sudo chown -R $STACK_USER:$STACK_USER /var/lib/contrail/
+            sudo mkdir -p /var/log/contrail
+            sudo chown -R $STACK_USER:$STACK_USER /var/log/contrail
+            sudo chmod 0750 /var/log/contrail
+        fi
+
+        echo_summary "Building contrail"
+        cd $CONTRAIL_DEST
+        sudo -E scons $SCONS_ARGS
+        cd $TOP_DIR
+
+        # As contrail's python packages requirements aren't installed
+        # automatically, we have to manage their installation.
+        pip_install -r $CONTRAIL_PLUGIN_DIR/files/requirements.txt
+        if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
+            pip_install discoveryclient
+        fi
+        # Force to use the version 0.9.3 of the Thrift python library as it is a requirements for Pycassa library.
+        # Recent OpenStack release require at least Thrift 0.10.0.
+        sudo pip install -U thrift==0.9.3
+    fi
+    if is_service_enabled vrouter; then
+        echo_summary "Building contrail vrouter"
+
+        cd $CONTRAIL_DEST
+
+        # Build vrouter-agent if not done earlier
+        if ! is_service_enabled api-srv disco svc-mon schema control collector analytic-api query-engine dns named; then
+            sudo -E scons $SCONS_ARGS controller/src/vnsw
+        fi
+
+        # Build vrouter kernel module
+        sudo -E scons $SCONS_ARGS ./vrouter
+
+        pip_install -r controller/src/vnsw/opencontrail-vrouter-netns/requirements.txt
+        if _vercmp $CONTRAIL_BRANCH "<=" R3.0; then
+            pip_install -r controller/src/vnsw/contrail-vrouter-api/requirements.txt
+        fi
+
+        cd $TOP_DIR
+    fi
+    if is_service_enabled ui-webs ui-jobs; then
+        # Fetch 3rd party and install webui
+        fetch_webui
+    fi
+
+}
+
+function install_contrail()
+{
+
+}
+
 if [[ "$1" == "stack" && "$2" == "source" ]]; then
     # Called after projects lib are sourced, before packages installation
 
@@ -232,6 +304,27 @@ if [[ "$1" == "stack" && "$2" == "source" ]]; then
     elif _vercmp $os_RELEASE ">" '16.04'; then
         echo "Ubuntu release $os_CODENAME ($os_RELEASE) is not supported by "
         echo "that devstack plugin."
+        exit 1
+    fi
+
+    if [[ ${CONTRAIL_DIST} != 'source' &&
+          ${CONTRAIL_DIST} != 'oss' &&
+          ${CONTRAIL_DIST} != 'juniper' ]]; then
+        echo "You have to choose from \"source\", \"oss\" and \"juniper\" "
+        echo "Contrail distribution. \"source\" will build Contrail from "
+        echo "source, \"oss\" is for OpenContrail packages, and \"juniper\" "
+        echo "for Juniper Contrail."
+        exit 1
+    fi
+
+    if [[ ${CONTRAIL_DIST} != 'source' && ${CONTRAIL_PACKAGE_REPO} == "" ]]; then
+        echo "When using \"oss\" or \"juniper\" packages, you need to specify "
+        echo "package repositories with packages and any dependencies. You "
+        echo "can specify more than one separated by new lines. GPG keys can "
+        echo "be passed after |. For example: "
+        echo ""
+        echo " deb http://local.repo/contrail R4.0 main|0xDEADBEEF"
+        echo ""
         exit 1
     fi
 
@@ -299,67 +392,10 @@ if [[ "$1" == "stack" && "$2" == "source" ]]; then
 elif [[ "$1" == "stack" && "$2" == "pre-install" ]]; then
     # Called afer pip requirements installation
 
-    fetch_contrail
-
-    if is_service_enabled api-srv disco svc-mon schema control collector analytic-api query-engine dns named; then
-        install_kafka
-        install_cassandra
-        install_cassandra_cpp_driver
-
-        # Packages should have been installed by devstack
-        #install_package $(_parse_package_files $CONTRAIL_DEST)
-
-        # From R4.0, IFMAP server (i.e. irond) dependency was removed
-        if _vercmp $CONTRAIL_BRANCH ">=" R4.0; then
-            if is_package_installed ifmap-server; then
-                uninstall_package ifmap-server || true #ifmap-server uninstall does not exit properly
-            fi
-            # Some needed directories were installed by the ifmap-server package
-            sudo mkdir -p /var/lib/contrail
-            sudo chown -R $STACK_USER:$STACK_USER /var/lib/contrail/
-            sudo mkdir -p /var/log/contrail
-            sudo chown -R $STACK_USER:$STACK_USER /var/log/contrail
-            sudo chmod 0750 /var/log/contrail
-        fi
-
-        echo_summary "Building contrail"
-        cd $CONTRAIL_DEST
-        sudo -E scons $SCONS_ARGS
-        cd $TOP_DIR
-
-        # As contrail's python packages requirements aren't installed
-        # automatically, we have to manage their installation.
-        pip_install -r $CONTRAIL_PLUGIN_DIR/files/requirements.txt
-        if _vercmp $CONTRAIL_BRANCH "<" R4.0; then
-            pip_install discoveryclient
-        fi
-        # Force to use the version 0.9.3 of the Thrift python library as it is a requirements for Pycassa library.
-        # Recent OpenStack release require at least Thrift 0.10.0.
-        sudo pip install -U thrift==0.9.3
-    fi
-    if is_service_enabled vrouter; then
-        echo_summary "Building contrail vrouter"
-
-        cd $CONTRAIL_DEST
-
-        # Build vrouter-agent if not done earlier
-        if ! is_service_enabled api-srv disco svc-mon schema control collector analytic-api query-engine dns named; then
-            sudo -E scons $SCONS_ARGS controller/src/vnsw
-        fi
-
-        # Build vrouter kernel module
-        sudo -E scons $SCONS_ARGS ./vrouter
-
-        pip_install -r controller/src/vnsw/opencontrail-vrouter-netns/requirements.txt
-        if _vercmp $CONTRAIL_BRANCH "<=" R3.0; then
-            pip_install -r controller/src/vnsw/contrail-vrouter-api/requirements.txt
-        fi
-
-        cd $TOP_DIR
-    fi
-    if is_service_enabled ui-webs ui-jobs; then
-        # Fetch 3rd party and install webui
-        fetch_webui
+    if [[ ${CONTRAIL_DIST} == 'source' ]]; then
+        build_contrail
+    else
+        install_contrail
     fi
 
 elif [[ "$1" == "stack" && "$2" == "install" ]]; then
