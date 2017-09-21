@@ -31,8 +31,10 @@ ANALYTICS_IP_PORT_LIST=$(echo $ANALYTICS_IP_LIST | \
     awk -F "," '{for (i=1;i<=NF;i++) $i=$i":8081"; print}')
 
 KAFKA_IP_PORT_LIST=$(echo $ANALYTICS_IP_LIST | \
-    awk -F " " '{for (i=1;i<=NF;i++) $i=$i":9092"; print}')
+    awk -F "," '{for (i=1;i<=NF;i++) $i=$i":9092"; print}')
 
+RABBIT_IP_PORT_LIST=$(echo $RABBIT_IP_LIST | \
+    awk -F "," '{for (i=1;i<=NF;i++) $i=$i":5672"; print}')
 
 # Conditionnaly set ifmap port
 IFMAP_PORT=8443
@@ -89,6 +91,30 @@ function contrail_config_cassandra()
     stop_service cassandra || true
     sudo rm -Rf /var/lib/cassandra/*
     start_service cassandra
+}
+
+function contrail_config_alarm_gen()
+{
+    local config_file="/etc/contrail/contrail-alarm-gen.conf"
+    sudo truncate -s 0 $config_file
+
+    iniset -sudo $config_file DEFAULTS log_local 1
+    iniset -sudo $config_file DEFAULTS log_level "SYS_NOTICE"
+    iniset -sudo $config_file DEFAULTS log_file "/var/log/contrail/contrail-alarm-gen.log"
+
+    iniset -sudo $config_file DEFAULTS kafka_broker_list $KAFKA_IP_PORT_LIST
+    iniset -sudo $config_file DEFAULTS zk_list $ZOOKEEPER_IP_PORT_LIST
+
+    if _vercmp $CONTRAIL_BRANCH ">=" R4.0; then
+        iniset -sudo $config_file DEFAULTS collectors $COLLECTOR_IP_PORT_LIST
+
+        iniset -sudo $config_file CONFIGDB rabbitmq_server_list $RABBIT_IP_PORT_LIST
+        iniset -sudo $config_file CONFIGDB rabbitmq_user $RABBIT_USERID
+        iniset -sudo $config_file CONFIGDB rabbitmq_password $RABBIT_PASSWORD
+
+        iniset -sudo $config_file CONFIGDB config_db_server_list $CASSANDRA_IP_PORT_LIST
+    fi
+
 }
 
 function contrail_config_zookeeper()
