@@ -73,7 +73,7 @@ function install_cassandra_cpp_driver() {
 
     # cassandra-cpp-driver depends on libuv, but on xenial the package is called libuv1.
     # We use equivs to stub libuv package, and install libuv1 from repository
-    apt-get install equivs
+    sudo apt-get install --assume-yes equivs
     equivs-control libuv
     sed -i -- 's/Package:.*/Package: libuv/g' libuv
     equivs-build libuv
