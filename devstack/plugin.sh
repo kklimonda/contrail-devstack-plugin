@@ -236,7 +236,8 @@ function build_contrail()
         echo_summary "Building contrail"
         cd $CONTRAIL_DEST
         sudo -E scons $SCONS_ARGS
-        setup_package build/${SCONS_TARGET}/nodemgr -e
+        sudo -E scons $SCONS_ARGS contrail-nodemgr
+        setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/nodemgr -e
         cd $TOP_DIR
 
 
@@ -258,7 +259,7 @@ function build_contrail()
         # Build vrouter-agent if not done earlier
         if ! is_service_enabled api-srv disco svc-mon schema control collector analytic-api query-engine dns named; then
             sudo -E scons $SCONS_ARGS controller/src/vnsw contrail-nodemgr
-            setup_package build/${SCONS_TARGET}/nodemgr -e
+            setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/nodemgr -e
         fi
 
         # Build vrouter kernel module
