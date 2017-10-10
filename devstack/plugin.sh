@@ -238,6 +238,7 @@ function build_contrail()
         sudo -E scons $SCONS_ARGS
         sudo -E scons $SCONS_ARGS contrail-nodemgr
         setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/nodemgr -e
+        setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/sandesh/common/ -e
         cd $TOP_DIR
 
 
@@ -260,6 +261,7 @@ function build_contrail()
         if ! is_service_enabled api-srv disco svc-mon schema control collector analytic-api query-engine dns named; then
             sudo -E scons $SCONS_ARGS controller/src/vnsw contrail-nodemgr
             setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/nodemgr -e
+            setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/sandesh/common/ -e
         fi
 
         # Build vrouter kernel module
