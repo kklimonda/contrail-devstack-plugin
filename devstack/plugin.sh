@@ -236,10 +236,28 @@ function build_contrail()
         echo_summary "Building contrail"
         cd $CONTRAIL_DEST
         sudo -E scons $SCONS_ARGS
-        sudo -E scons $SCONS_ARGS contrail-nodemgr
-        setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/nodemgr -e
+        sudo -E scons $SCONS_ARGS contrail-nodemgr vrouter:node_mgr database:node_mgr
+        setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/nodemgr/ -e
         setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/sandesh/common/ -e
+        setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/vnsw/agent/uve/ -e
+        setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/analytics/database/ -e
         cd $TOP_DIR
+
+        # contrail-nodemgr depends on contrail-version script for checking
+        # version of components. Create a fake script that satisfies those
+        # requirements.
+        today=`date +%Y%m%d`
+        sudo tee /usr/local/bin/contrail-version > /dev/null <<EOF
+#!/bin/sh
+echo "
+contrail-nodemgr 5.0-${today} ${today}
+contrail-analytics 5.0-${today} ${today}
+contrail-config 5.0-${today} ${today}
+contrail-vrouter-common 5.0-${today} ${today}
+contrail-control 5.0-${today} ${today}
+"
+EOF
+        sudo chmod +x /usr/local/bin/contrail-version
 
 
         # As contrail's python packages requirements aren't installed
@@ -259,9 +277,11 @@ function build_contrail()
 
         # Build vrouter-agent if not done earlier
         if ! is_service_enabled api-srv disco svc-mon schema control collector analytic-api query-engine dns named; then
-            sudo -E scons $SCONS_ARGS controller/src/vnsw contrail-nodemgr
-            setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/nodemgr -e
+            sudo -E scons $SCONS_ARGS controller/src/vnsw contrail-nodemgr vrouter:node_mgr database:node_mgr
+            setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/nodemgr/ -e
             setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/sandesh/common/ -e
+            setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/vnsw/agent/uve/ -e
+            setup_package $CONTRAIL_DEST/build/$SCONS_TARGET/analytics/database/ -e
         fi
 
         # Build vrouter kernel module
